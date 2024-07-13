@@ -24,14 +24,14 @@
 // export default useDatabase;
 
 import { useState, useEffect } from "react";
-import { getFirestore, collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { getFirestore, collection, query, orderBy, onSnapshot, where } from "firebase/firestore";
 
-const useDatabase = (collectionName) => {
+const useDatabase = (collectionName, uid) => {
     const [docs, setDocs] = useState([]);
     const db = getFirestore();
 
     useEffect(() => {
-        const q = query(collection(db, collectionName), orderBy('createdAt', 'desc'));
+        const q = query(collection(db, collectionName), where("user", "==", uid) ,orderBy('createdAt', 'desc'));
         const unsub = onSnapshot(q, (snapshot) => {
             let documents = [];
             snapshot.forEach(doc => {
@@ -41,7 +41,7 @@ const useDatabase = (collectionName) => {
         });
 
         return () => unsub();
-    }, [collectionName, db]);
+    }, [collectionName, db, uid]);
 
     return { docs };
 }

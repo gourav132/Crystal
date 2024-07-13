@@ -1,13 +1,43 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Upload } from '../../components';
 import useDatabase from '../../hooks/useDatabase';
 import { motion } from 'framer-motion';
 import Masonry from 'react-masonry-css';
-import './Home.css'; // Add this for custom styling
+import './Home.css';
+import { database } from '../../Firebase/config';
+import { useNavigate, useParams } from 'react-router-dom';
+import Loading from '../Loading/Loading';
 
 export default function Home({ setSelectedImg }) {
 
-  const { docs } = useDatabase('images');
+  const { uid } = useParams();
+
+  const { docs } = useDatabase('images', uid);
+  const [ userData, setUserData ] = useState();
+  const [load, setLoad ] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setLoad(true);
+    const checkUidInFirestore = async () => {
+      if (!uid) {
+          console.log("Invalid UID in URL.");
+          return;
+      }
+      try {
+          const userSnapshot = await database.collection('users').doc(uid).get();
+          if (userSnapshot.exists) {
+            setUserData(userSnapshot.data());
+          } else {
+            navigate("/Error")
+          }
+          setLoad(false);
+      } catch (error) {
+          console.error("Error checking UID in Firestore:", error);
+      }
+  };
+      checkUidInFirestore();
+  }, [navigate, uid]);
 
   const breakpointColumnsObj = {
     default: 3,
@@ -17,9 +47,11 @@ export default function Home({ setSelectedImg }) {
 
   return (
       <div>
+        {load ? <Loading /> : 
+        <div>
           <section className="body">
-              <h1 className="heading tracking-tighter">A Curated Photo Gallery</h1>
-              <p className="sub-heading tracking-tighter">In publishing and graphic design, Lorem ipsum is a placeholder text commonly used to demonstrate the visual form of a document or a typeface without relying on meaningful content. Lorem ipsum may be used as a placeholder before the final copy is available.</p>
+              <h1 className="text-4xl tracking-tighter mb-5 text-primary">{userData.title}</h1>
+              <p className="tracking-tighter font-medium text-secondary">{userData.description}</p>
           </section>
           <Upload />
           <section className="gallery mt-8">
@@ -49,6 +81,8 @@ export default function Home({ setSelectedImg }) {
               })}
             </Masonry>
           </section>
+          </div >
+        }
       </div>
   );
 }

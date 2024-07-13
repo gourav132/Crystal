@@ -1,6 +1,7 @@
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/storage';
 import 'firebase/compat/firestore';
+import 'firebase/compat/auth';
 
 // import { initializeApp } from "firebase/app";
 
@@ -26,8 +27,9 @@ const firebaseConfig = {
 var firebaseApp = firebase.initializeApp(firebaseConfig);
 const storage = firebaseApp.storage();
 const database = firebaseApp.firestore();
+const auth = firebase.auth();
 const timestamp = firebase.firestore.FieldValue.serverTimestamp;
 
 database.settings({ timestampsInSnapshots: true, merge: true });
 
-export { storage, database, timestamp };
+export { storage, database, timestamp, auth };

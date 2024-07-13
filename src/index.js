@@ -1,29 +1,3 @@
-// import React from 'react';
-// import ReactDOM from 'react-dom';
-// import './index.scss';
-// import App from './App';
-// import {
-//   BrowserRouter as Router,
-//   Routes,
-//   Route,
-//   Link
-// } from "react-router-dom";
-
-// import SignIn from './page/SignIn/SignIn';
-
-// ReactDOM.render(
-//   <React.StrictMode>
-//     <Router>
-//       <Routes>
-//         <Route exact path = "/" element = { <App /> } />
-//         <Route path = "/SignIn" element = { <SignIn /> } />
-//       </Routes>
-//     </Router>
-//   </React.StrictMode>,
-//   document.getElementById('root')
-// );
-
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.scss';
@@ -32,22 +6,25 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Link
 } from "react-router-dom";
 import './index.css'
-
-import SignIn from './page/SignIn/SignIn';
+import Home from './page/Auth/Home/Home';
+import { Loading, Profile } from './page';
+import NotFound from './page/Error/NotFound';
 
 const container = document.getElementById('root');
 const root = createRoot(container);
 
 root.render(
   <React.StrictMode>
-    <Router>
-      <Routes>
-        <Route exact path="/" element={<App />} />
-        <Route path="/SignIn" element={<SignIn />} />
-      </Routes>
-    </Router>
+      <Router>
+        <Routes>
+          <Route exact path="/Gallery/:uid" element={<App />} />
+          <Route path="/Auth" element={<Home />} />
+          <Route path='/' element={<Loading />} />
+          <Route path='/Profile' element={< Profile />} />
+          <Route path='/Error' element={< NotFound />} />
+        </Routes>
+      </Router>
   </React.StrictMode>
 );

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { storage, database, timestamp } from '../Firebase/config';
+import { storage, database, timestamp, auth } from '../Firebase/config';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 const useStorage = (file) => {
     const [ progress, setProgress ] = useState(null);
     const [ error, setError ] = useState(null);
     const [ url, setUrl ] = useState(null);
+    const [ user ] = useAuthState(auth);
 
     useEffect(() => {
         // reference
@@ -18,7 +20,7 @@ const useStorage = (file) => {
         }, async () => {
             const url = await reference.getDownloadURL();
             const createdAt = timestamp();
-            collectionRef.add({ url, createdAt })
+            collectionRef.add({ url, createdAt, user: user.displayName })
             setUrl(url)
         })
     }, [file])

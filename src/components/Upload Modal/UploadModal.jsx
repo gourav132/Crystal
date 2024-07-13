@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { database, timestamp } from '../../Firebase/config';
+import { auth, database, timestamp } from '../../Firebase/config';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 export default function UploadModal({ setAddImage, setError, setFile }) {
 
     const [ url, setUrl ] = useState(null);
+    const [ user ] = useAuthState(auth);
     const types = ['image/png', 'image/jpeg'];
 
     const handleChange = (e) => {
@@ -25,9 +27,9 @@ export default function UploadModal({ setAddImage, setError, setFile }) {
         if(validateURL(url)){
             setAddImage(null);
             const createdAt = timestamp();
-            collectionRef.add({ url, createdAt })
+            collectionRef.add({ url, createdAt, user: user.displayName })
             .then( resp => {
-                console.log(resp);
+                // console.log(resp);
                 setUrl(null)
             })
             .catch( error => {
@@ -50,7 +52,7 @@ export default function UploadModal({ setAddImage, setError, setFile }) {
     }
 
     const handleClick = (e) => {
-        console.log(e.target.classList)
+        // console.log(e.target.classList)
         if(e.target.classList.contains('backdrop') || e.target.classList.contains('upload-wrapper')){
             setAddImage(null);
         }
@@ -74,8 +76,8 @@ export default function UploadModal({ setAddImage, setError, setFile }) {
                     <p>Simply select your image from your computer. Just keep in mind to choose a jpg or png file when uploading.</p>
 
                     <motion.label 
-                        whileHover={{ scale: 1.1 }} 
-                        className='text-center upload-image-button' 
+                        // whileHover={{ scale: 1.1 }} 
+                        className='bg-primary mt-5 text-sm text-white px-4 py-2 rounded hover:bg-primary/90 cursor-pointer' 
                         htmlFor="inputFile"
                     >
                         <div className='transition-all'>
@@ -99,13 +101,13 @@ export default function UploadModal({ setAddImage, setError, setFile }) {
                     <input 
                         type="text"
                         placeholder='Past your link here' 
-                        className='input-url' 
+                        className='mt-3 text-sm border-2 border-primary/80 rounded px-2 py-2 bg-transparent focus:outline-none' 
                         onChange={ (e) => setUrl(e.target.value)}
                     />
 
                     <motion.button 
                         whileHover={{ scale: 1.1 }} 
-                        className='button-url-upload' 
+                        className='bg-primary mt-2 w-44 text-sm text-white px-4 py-2 rounded hover:bg-primary/90 cursor-pointer' 
                         onClick={ handleURL }
                     >
                         + Add Image
