@@ -1,15 +1,23 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { motion } from 'framer-motion';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { auth, database } from '../../../Firebase/config';
-import { ThreeDots } from 'react-loader-spinner'
-import Profile from '../../Profile Setup/Profile';
-
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import AuthLayout from '../../../components/AuthLayout/AuthLayout';
+import FormInput from '../../../components/FormInput/FormInput';
+import Button from '../../../components/Button/Button';
 
 export default function Register({ setMode }) {
-  const { register, handleSubmit, formState: { errors } } = useForm();
-  const [ error, setError ] = useState();
-  const [load, setLoad ] = useState(false);
+  const { register, handleSubmit, formState: { errors }, watch } = useForm();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
+  const password = watch('password');
 
   // Function to generate a unique 5-digit ID
   const generateUniqueId = async () => {
@@ -28,140 +36,249 @@ export default function Register({ setMode }) {
   };
 
   const onSubmit = async (data) => {
-    setLoad(true);
+    setLoading(true);
+    setError('');
+    
     try {
       const userCredential = await auth.createUserWithEmailAndPassword(data.email, data.password);
       const user = userCredential.user;
       const userId = await generateUniqueId();
+      
       await user.updateProfile({
         displayName: userId,
-      })
+      });
+      
       await database.collection('users').doc(userId).set({
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
         Firebaseuid: user.uid,
-        uniqueId: userId 
-      })
-      setLoad(false);
-    }
-    catch (err) {
+        uniqueId: userId,
+        createdAt: new Date().toISOString()
+      });
+      
+      // Redirect to the intended page or user's gallery
+      const from = location.state?.from?.pathname || `/Gallery/${userId}`;
+      navigate(from, { replace: true });
+    } catch (err) {
       if (err.code === 'auth/email-already-in-use') {
-        setError('The email address is already in use by another account.');
+        setError('An account with this email already exists. Please sign in instead.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password should be at least 6 characters long.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
       } else {
-        setError('An error occurred. Please try again.');
+        setError('An error occurred while creating your account. Please try again.');
       }
-      setLoad(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div>
-      {/* <Profile /> */}
-      <h3 className="text-2xl font-semibold text-center">Welcome to Crystal!</h3>
-      <p className="font-semibold text-sm text-gray-600 w-96 mt-2 text-center">
-        Create your account and start sharing your stunning photo gallery with the world.
-      </p>
-      <form className="mt-8" onSubmit={handleSubmit(onSubmit)}>
-        <div className="flex w-full gap-3">
-          <div className="w-full">
-            <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700">
-              First Name
-            </label>
-            <input
-              id="firstName"
-              {...register('firstName', { required: true })}
-              className={`border py-2 px-2 w-full rounded-md shadow-sm mt-1 text-sm focus:outline-none ${
-                errors.firstName ? 'border-red-200' : 'focus:ring-2 focus:ring-secondary'
-              }`}
-              type="text"
-              placeholder="Gourav"
-            />
-            {errors.firstName && <p className="text-red-400 text-sm mt-1">First Name is required</p>}
-          </div>
-
-          <div className="w-full">
-            <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700">
-              Last Name
-            </label>
-            <input
-              id="lastName"
-              {...register('lastName', { required: true })}
-              className={`border py-2 px-2 w-full rounded shadow-sm mt-1 text-sm focus:outline-none ${
-                errors.lastName ? 'border-red-200' : 'focus:ring-2 focus:ring-secondary'
-              }`}
-              type="text"
-              placeholder="Chatterjee"
-            />
-            {errors.lastName && <p className="text-red-400 text-sm mt-1">Last Name is required</p>}
-          </div>
-        </div>
-
-        <div className="mt-3">
-          <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
-            Email address
-          </label>
-          <input
-            id="email"
-            {...register('email', { required: true, pattern: /^\S+@\S+$/i })}
-            className={`border py-2 px-2 w-96 rounded-md shadow-sm mt-1 text-sm focus:outline-none ${
-              errors.email ? 'border-red-200' : 'focus:ring-2 focus:ring-secondary'
-            }`}
+    <AuthLayout
+      title="Join Crystal"
+      subtitle="Create your account and start sharing your stunning photo gallery"
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+        {/* Name Fields */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <FormInput
+            label="First name"
+            id="firstName"
             type="text"
-            placeholder="someone@gmail.com"
+            placeholder="John"
+            register={register('firstName', { 
+              required: 'First name is required',
+              minLength: {
+                value: 2,
+                message: 'First name must be at least 2 characters'
+              }
+            })}
+            error={errors.firstName?.message}
+            icon={FiUser}
           />
-          {errors.email && (
-            <p className="text-red-400 text-sm mt-1">
-              {errors.email.type === 'required' ? 'Email is required' : 'Invalid email format'}
-            </p>
-          )}
+          
+          <FormInput
+            label="Last name"
+            id="lastName"
+            type="text"
+            placeholder="Doe"
+            register={register('lastName', { 
+              required: 'Last name is required',
+              minLength: {
+                value: 2,
+                message: 'Last name must be at least 2 characters'
+              }
+            })}
+            error={errors.lastName?.message}
+            icon={FiUser}
+          />
         </div>
 
-        <div className="mt-3">
-          <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+        {/* Email Input */}
+        <FormInput
+          label="Email address"
+          id="email"
+          type="email"
+          placeholder="john@example.com"
+          register={register('email', { 
+            required: 'Email is required',
+            pattern: {
+              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+              message: 'Please enter a valid email address'
+            }
+          })}
+          error={errors.email?.message}
+          icon={FiMail}
+        />
+
+        {/* Password Input */}
+        <div className="space-y-1">
+          <label htmlFor="password" className="block text-xs font-medium text-gray-700">
             Password
           </label>
-          <input
-            id="password"
-            {...register('password', { required: true, minLength: 6 })}
-            className={`border py-2 px-2 w-96 rounded shadow-sm mt-1 text-sm focus:outline-none ${
-              errors.password ? 'border-red-200' : 'focus:ring-2 focus:ring-secondary'
-            }`}
-            type="password"
-            placeholder="******"
-          />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+              <FiLock className="h-3.5 w-3.5 text-gray-400" />
+            </div>
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Create a strong password"
+              {...register('password', { 
+                required: 'Password is required',
+                minLength: {
+                  value: 6,
+                  message: 'Password must be at least 6 characters'
+                }
+              })}
+              className={`
+                block w-full pl-7 pr-8 py-2 border border-gray-300 rounded-md
+                placeholder-gray-400 text-gray-900 text-xs
+                focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                transition-all duration-200 ease-in-out
+                ${errors.password ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : ''}
+                hover:border-gray-400
+              `}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600"
+            >
+              {showPassword ? <FiEyeOff className="h-3.5 w-3.5" /> : <FiEye className="h-3.5 w-3.5" />}
+            </button>
+          </div>
           {errors.password && (
-            <p className="text-red-400 text-sm mt-1">
-              {errors.password.type === 'required'
-                ? 'Password is required'
-                : 'Password must be at least 6 characters long'}
-            </p>
+            <motion.p 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-xs text-red-600 flex items-center gap-1"
+            >
+              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              {errors.password.message}
+            </motion.p>
           )}
         </div>
-           {error &&  <p className='text-center mt-4 text-red-500 text-sm font-bold'> {error} </p> }
-        <button
-          type="submit"
-          className="mt-4 w-96 bg-primary hover:bg-primary/90 py-2 px-6 rounded-md shadow-lg flex items-center justify-center font-semibold text-white text-sm"
-        > 
-          <ThreeDots
-            visible={load}
-            height="20"
-            width="50"
-            color="#ffffff"
-            radius="9"
-            ariaLabel="three-dots-loading"
-            wrapperStyle={{}}
-            wrapperClass=""
+
+        {/* Confirm Password Input */}
+        <div className="space-y-1">
+          <label htmlFor="confirmPassword" className="block text-xs font-medium text-gray-700">
+            Confirm password
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+              <FiLock className="h-3.5 w-3.5 text-gray-400" />
+            </div>
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Confirm your password"
+              {...register('confirmPassword', { 
+                required: 'Please confirm your password',
+                validate: value => value === password || 'Passwords do not match'
+              })}
+              className={`
+                block w-full pl-7 pr-8 py-2 border border-gray-300 rounded-md
+                placeholder-gray-400 text-gray-900 text-xs
+                focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                transition-all duration-200 ease-in-out
+                ${errors.confirmPassword ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : ''}
+                hover:border-gray-400
+              `}
             />
-          {!load && "Register" }
-        </button>
-        <p className="text-sm font-semibold text-gray-700 mt-4 text-center">
-          Already have an account?{' '}
-          <span onClick={() => setMode('login')} className="text-primary cursor-pointer font-bold">
-            Login
-          </span>
-        </p>
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-gray-600"
+            >
+              {showConfirmPassword ? <FiEyeOff className="h-3.5 w-3.5" /> : <FiEye className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+          {errors.confirmPassword && (
+            <motion.p 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-xs text-red-600 flex items-center gap-1"
+            >
+              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              {errors.confirmPassword.message}
+            </motion.p>
+          )}
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-50 border border-red-200 rounded-md p-2.5"
+          >
+            <div className="flex">
+              <svg className="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <div className="ml-1.5">
+                <p className="text-xs text-red-800">{error}</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Submit Button */}
+        <Button
+          type="submit"
+          loading={loading}
+          className="w-full"
+          size="lg"
+        >
+          Create your account
+        </Button>
+
+        {/* Divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="px-2 bg-white text-gray-500">Already have an account?</span>
+          </div>
+        </div>
+
+        {/* Sign In Link */}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setMode('login')}
+          className="w-full"
+        >
+          Sign in to your account
+        </Button>
       </form>
-    </div>
+    </AuthLayout>
   );
 }

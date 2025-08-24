@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Crystal Gallery",
+  "name": "Crystal - Photo Gallery App",
+  "description": "A beautiful photo gallery app for sharing and managing your images",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +21,9 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#7d3865",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": ["photo", "productivity", "social"],
+  "lang": "en"
 }

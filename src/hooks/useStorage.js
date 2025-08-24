@@ -9,10 +9,17 @@ const useStorage = (file) => {
     const [ user ] = useAuthState(auth);
 
     useEffect(() => {
+        if (!file) return;
+        
+        // Handle both old and new file structure
+        const actualFile = file.file || file;
+        const imageName = file.name || actualFile.name;
+        const imageDescription = file.description || '';
+        
         // reference
-        const reference = storage.ref(file.name);
+        const reference = storage.ref(actualFile.name);
         const collectionRef = database.collection('images');
-        reference.put(file).on('state_changed', (snap) => {
+        reference.put(actualFile).on('state_changed', (snap) => {
             let percentage = (snap.bytesTransferred / snap.totalBytes)*100
             setProgress(percentage)
         }, (err) => {
@@ -20,7 +27,13 @@ const useStorage = (file) => {
         }, async () => {
             const url = await reference.getDownloadURL();
             const createdAt = timestamp();
-            collectionRef.add({ url, createdAt, user: user.displayName })
+            collectionRef.add({ 
+                url, 
+                name: imageName || 'Untitled Image',
+                description: imageDescription,
+                createdAt, 
+                user: user.displayName 
+            })
             setUrl(url)
         })
     }, [file])
